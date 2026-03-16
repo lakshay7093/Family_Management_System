@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f5f7ff" />
+      <stop offset="70%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#c7d2fe" />
+    </linearGradient>
+    <linearGradient id="sil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.04" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="800" fill="url(#bg)" />
+
+  <!-- Subtle pattern -->
+  <defs>
+    <pattern id="dots" width="60" height="60" patternUnits="userSpaceOnUse">
+      <circle cx="30" cy="30" r="2" fill="#0f172a" fill-opacity="0.08" />
+    </pattern>
+  </defs>
+  <rect width="1200" height="800" fill="url(#dots)" />
+
+  <!-- Family silhouette -->
+  <g transform="translate(280 260) scale(1.05)">
+    <path d="M300 380c-56-52-120-80-192-80-93 0-166 48-212 80h404Z" fill="url(#sil)" />
+    <path d="M360 380c0-64-52-116-116-116s-116 52-116 116 52 116 116 116 116-52 116-116Z" fill="#0f172a" fill-opacity="0.07" />
+    <path d="M410 381c-40-38-84-57-132-57-64 0-114 33-150 57h282Z" fill="#0f172a" fill-opacity="0.06" />
+    <path d="M240 240c-24-36-60-58-100-58-72 0-130 58-130 130v140h230v-212Z" fill="#0f172a" fill-opacity="0.09" />
+    <path d="M380 240c-24-36-60-58-100-58-72 0-130 58-130 130v140h230v-212Z" fill="#0f172a" fill-opacity="0.09" />
+    <circle cx="140" cy="170" r="44" fill="#0f172a" fill-opacity="0.14" />
+    <circle cx="340" cy="170" r="44" fill="#0f172a" fill-opacity="0.14" />
+  </g>
+
+  <!-- Soft vignette -->
+  <rect width="1200" height="800" fill="url(#sil)" />
+</svg>
