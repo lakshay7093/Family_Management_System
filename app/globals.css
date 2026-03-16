@@ -21,12 +21,10 @@
 
 body {
   background-color: var(--background);
-  background-image: url("/family-bg.svg");
+  background-image: linear-gradient(to bottom right, #eef2ff, #e0f2fe, #d1fae5);
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
-  background-attachment: fixed;
-  background-blend-mode: overlay;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-transparent text-slate-900">
+    <main className="min-h-screen bg-linear-to-br from-indigo-50 via-sky-50 to-emerald-50 text-slate-900">
       <section className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-16 md:py-24">
         <header className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="max-w-xl">
@@ -32,7 +32,7 @@ export default function Home() {
             </div>
           </div>
           <div className="hidden md:block">
-            <div className="relative aspect-4/3 w-85 overflow-hidden rounded-3xl bg-white shadow-lg">
+            <div className="relative aspect-4/3 w-80 overflow-hidden rounded-3xl bg-white shadow-lg">
               <div className="absolute inset-0 bg-linear-to-tr from-indigo-500/20 via-sky-500/10 to-emerald-500/10" />
               <div className="relative h-full p-8">
                 <div className="space-y-3">
