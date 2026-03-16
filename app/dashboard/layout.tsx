@@ -31,10 +31,11 @@ export default function DashboardLayout({
     setIsSidebarOpen(false)
   }, [pathname])
 
+
   return (
     <ProtectedRoute>
       <div className={`min-h-screen bg-slate-50 ${isSidebarOpen ? "overflow-hidden" : ""}`}>
-        <div className="flex min-h-screen">
+        <div className="relative flex min-h-screen">
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
           <div className="flex flex-1 flex-col">
             <Navbar

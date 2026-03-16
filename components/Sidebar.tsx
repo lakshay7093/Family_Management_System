@@ -33,13 +33,25 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col gap-8 bg-slate-950 p-6 text-white shadow-xl transition-transform duration-200 md:static md:translate-x-0 md:flex ${
+        className={`absolute top-16 bottom-0 left-0 z-40 flex w-64 shrink-0 flex-col gap-8 bg-slate-950 p-6 text-white shadow-xl transition-transform duration-200 md:static md:translate-x-0 md:flex ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div>
-          <p className="text-lg font-bold tracking-wide">Family Hub</p>
-          <p className="mt-1 text-sm text-slate-300">Manage members, tasks, expenses & more.</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-lg font-bold tracking-wide">Family Hub</p>
+            <p className="mt-1 text-sm text-slate-300">Manage members, tasks, expenses & more.</p>
+          </div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 md:hidden"
+              aria-label="Close navigation"
+            >
+              <span className="text-lg">×</span>
+            </button>
+          )}
         </div>
 
         <nav className="flex flex-col gap-1">
