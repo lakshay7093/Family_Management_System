@@ -24,7 +24,7 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
   }
 
   return (
-    <header className="relative z-50 flex h-20 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm md:h-24 md:px-6">
+    <header className="relative z-50 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm md:h-20 md:px-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -61,15 +61,15 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="text-right">
-          <p className="text-sm font-medium text-slate-700">{user?.email ?? "Guest"}</p>
+      <div className="flex items-center gap-2">
+        <div className="text-right hidden sm:block">
+          <p className="text-sm font-medium text-slate-700 truncate max-w-[140px]">{user?.email ?? "Guest"}</p>
           <p className="text-xs text-slate-500">{user ? "Signed in" : "Not signed in"}</p>
         </div>
         <button
           type="button"
           onClick={handleSignOut}
-          className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+          className="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 whitespace-nowrap"
         >
           Sign out
         </button>

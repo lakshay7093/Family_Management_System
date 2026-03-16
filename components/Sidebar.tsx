@@ -33,8 +33,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`absolute top-16 bottom-0 left-0 z-40 flex w-64 shrink-0 flex-col gap-8 bg-slate-950 p-6 text-white shadow-xl transition-transform duration-200 md:static md:translate-x-0 md:flex ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed top-16 bottom-0 left-0 z-40 flex w-64 shrink-0 flex-col gap-8 bg-slate-950 p-6 text-white shadow-xl transition-transform duration-200 md:static md:top-auto md:bottom-auto md:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         <div className="flex items-start justify-between">
