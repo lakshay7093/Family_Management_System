@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { db } from "@/firebase/config"
 import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore"
@@ -58,7 +58,7 @@ export default function DocumentsPage() {
     file_type?: string
   } | null>(null)
 
-  const documentsCollection = useMemo(() => collection(db, "documents"), [])
+  const documentsCollection = collection(db, "documents")
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true)

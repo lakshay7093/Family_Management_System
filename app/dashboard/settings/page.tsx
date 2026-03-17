@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { applyTheme, getSavedSettings, saveSettings, Settings } from "@/lib/settings"
+import { useEffect, useState, useCallback, useRef } from "react"
+import { applyTheme, getSavedSettings, saveSettings, Settings, defaultSettings } from "@/lib/settings"
 import { toast } from "react-hot-toast"
 import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
 import { useAuth } from "@/context/AuthContext"
 import { db } from "@/firebase/config"
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore"
+import { collection, getDocs, doc, updateDoc, getDoc } from "firebase/firestore"
+import { supabase } from "@/lib/supabase"
 
 const themeOptions = [
   { label: "System", value: "system" },
@@ -25,25 +26,76 @@ const defaultPages = [
 ]
 
 export default function SettingsPage() {
-  const { role } = useAuth()
-  const [settings, setSettings] = useState<Settings>(() => getSavedSettings())
+  const { role, user } = useAuth()
+  const [settings, setSettings] = useState<Settings>(defaultSettings)
   const [saved, setSaved] = useState(false)
 
+  // Load settings from localStorage on client only
+  useEffect(() => {
+    setSettings(getSavedSettings())
+  }, [])
+
+  // Profile image
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [imageUploading, setImageUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // User role management (admin only)
-  const [users, setUsers] = useState<{ id: string; email: string; role: string }[]>([])
+  const [users, setUsers] = useState<{ id: string; email: string; role: string; photoUrl?: string }[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
+
+  // Load current profile image from Firestore
+  useEffect(() => {
+    if (!user) return
+    getDoc(doc(db, "users", user.uid)).then((snap) => {
+      if (snap.exists()) setProfileImage(snap.data().photoUrl ?? null)
+    })
+  }, [user])
 
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true)
     try {
       const snap = await getDocs(collection(db, "users"))
-      setUsers(snap.docs.map((d) => ({ id: d.id, ...(d.data() as { email: string; role: string }) })))
+      setUsers(snap.docs.map((d) => ({ id: d.id, ...(d.data() as { email: string; role: string; photoUrl?: string }) })))
     } catch (err) {
       console.error("Failed to load users", err)
     } finally {
       setUsersLoading(false)
     }
   }, [])
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file")
+      return
+    }
+
+    setImageUploading(true)
+    try {
+      const filePath = `profiles/${user.uid}_${Date.now()}.${file.name.split(".").pop()}`
+      const { error: uploadError } = await supabase.storage
+        .from("Family_images")
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw new Error(uploadError.message)
+
+      const { data } = supabase.storage.from("Family_images").getPublicUrl(filePath)
+      const photoUrl = data.publicUrl
+
+      await updateDoc(doc(db, "users", user.uid), { photoUrl })
+      setProfileImage(photoUrl)
+      toast.success("Profile photo updated")
+    } catch (err) {
+      console.error("Image upload failed", err)
+      toast.error("Failed to upload image")
+    } finally {
+      setImageUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
 
   useEffect(() => {
     if (role === "admin") void fetchUsers()
@@ -90,6 +142,46 @@ export default function SettingsPage() {
       </header>
 
       <section className="grid gap-6 lg:grid-cols-2">
+        {/* Profile Photo */}
+        <Card title="Profile Photo" subtitle="Upload a photo to personalize your account.">
+          <div className="mt-3 flex flex-col items-center gap-4">
+            <div
+              className="relative h-24 w-24 cursor-pointer overflow-hidden rounded-full border-2 border-slate-200 bg-slate-100 shadow"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {profileImage ? (
+                <img src={profileImage} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-3xl text-slate-400">
+                  👤
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30 opacity-0 transition hover:opacity-100">
+                <span className="text-xs font-semibold text-white">Change</span>
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={imageUploading}
+            >
+              {imageUploading ? "Uploading…" : profileImage ? "Change photo" : "Upload photo"}
+            </Button>
+            {profileImage && (
+              <p className="text-xs text-slate-400">Click the photo or button to change it</p>
+            )}
+          </div>
+        </Card>
+
         <Card title="Theme" subtitle="Choose light, dark, or follow your system preference.">
           <div className="mt-3 space-y-3">
             {themeOptions.map((option) => (

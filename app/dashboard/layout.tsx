@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import Navbar from "@/components/Navbar"
@@ -15,12 +15,15 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const redirectedRef = useRef(false)
 
   useEffect(() => {
     if (pathname !== "/dashboard") return
+    if (redirectedRef.current) return
 
     const settings = getSavedSettings()
     if (settings.defaultStartPage && settings.defaultStartPage !== "/dashboard") {
+      redirectedRef.current = true
       router.replace(settings.defaultStartPage)
     }
   }, [pathname, router])
