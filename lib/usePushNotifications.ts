@@ -9,6 +9,16 @@ import { useAuth } from "@/context/AuthContext"
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
 
+// Firebase config to send to service worker (NEXT_PUBLIC_ vars are fine in client bundle)
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+}
+
 export function usePushNotifications() {
   const { user } = useAuth()
 
@@ -23,36 +33,29 @@ export function usePushNotifications() {
         if (!messaging) return
 
         const permission = await Notification.requestPermission()
-        if (permission !== "granted") {
-          console.log("Notification permission denied")
-          return
-        }
+        if (permission !== "granted") return
 
-        // Explicitly register the service worker first
+        // Register SW
         const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
           scope: "/",
         })
-
-        // Wait for SW to be active
         await navigator.serviceWorker.ready
+
+        // Send config to SW via postMessage (no hardcoded keys in SW file)
+        swReg.active?.postMessage({ type: "INIT_FIREBASE", config: firebaseConfig })
 
         const token = await getToken(messaging, {
           vapidKey: VAPID_KEY,
           serviceWorkerRegistration: swReg,
         })
 
-        if (!token) {
-          console.warn("No FCM token received")
-          return
-        }
+        if (!token) return
 
         await setDoc(
           doc(db, "users", user.uid),
           { fcmToken: token, fcmUpdatedAt: new Date() },
           { merge: true }
         )
-
-        console.log("FCM token saved:", token.slice(0, 20) + "...")
       } catch (err) {
         console.error("Push notification setup failed:", err)
       }
