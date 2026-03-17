@@ -37,18 +37,21 @@ export default function DashboardLayout({
 
   return (
     <ProtectedRoute>
-      <div className={`min-h-screen bg-slate-50 ${isSidebarOpen ? "overflow-hidden" : ""}`}>
-        <div className="relative flex min-h-screen">
+      <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
+        {/* Navbar — fixed at top */}
+        <Navbar
+          sidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
+        />
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-          <div className="flex flex-1 flex-col">
-            <Navbar
-              sidebarOpen={isSidebarOpen}
-              onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
-            />
-            <main className="flex-1 px-4 py-6 md:px-10">
-              <div className="mx-auto w-full max-w-6xl">{children}</div>
-            </main>
-          </div>
+
+          {/* Main content — scrolls independently */}
+          <main className="flex-1 overflow-y-auto px-4 py-6 md:px-10">
+            <div className="mx-auto w-full max-w-6xl">{children}</div>
+          </main>
         </div>
       </div>
     </ProtectedRoute>
