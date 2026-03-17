@@ -53,10 +53,10 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col bg-slate-950 text-white shadow-xl
+          fixed top-0 left-0 z-40 h-full w-64 shrink-0 flex-col bg-slate-950 text-white shadow-xl
           transition-transform duration-200
-          md:sticky md:top-0 md:h-screen md:translate-x-0
-          ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+          md:sticky md:top-0 md:flex md:h-screen md:translate-x-0
+          ${isOpen ? "flex translate-x-0" : "hidden -translate-x-full md:flex"}
         `}
       >
         {/* Scrollable inner content */}
