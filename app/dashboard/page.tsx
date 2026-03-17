@@ -61,6 +61,14 @@ const adminCards = [
   },
 ]
 
+const extraCards = [
+  { title: "Expense Split", description: "Split costs and track who owes what.", href: "/dashboard/split", icon: "🤝", color: "from-cyan-500 to-blue-600" },
+  { title: "Calendar", description: "Visual calendar of all family events.", href: "/dashboard/calendar", icon: "📅", color: "from-fuchsia-500 to-pink-600" },
+  { title: "Family Chat", description: "Real-time chat for the whole family.", href: "/dashboard/chat", icon: "💬", color: "from-green-500 to-emerald-600" },
+  { title: "Notifications", description: "Send and receive family announcements.", href: "/dashboard/notifications", icon: "🔔", color: "from-yellow-500 to-orange-500" },
+  { title: "AI Assistant", description: "Smart family planning companion.", href: "/dashboard/ai", icon: "✨", color: "from-violet-500 to-indigo-600" },
+]
+
 function AdminDashboard() {
   const { user } = useAuth()
   const [counts, setCounts] = useState<DashboardCounts>({
@@ -168,6 +176,28 @@ function AdminDashboard() {
               className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
             >
               {a.label}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-base font-semibold text-slate-900 mb-4">New Features</h2>
+        <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-5">
+          {extraCards.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${card.color} text-xl shadow`}>
+                {card.icon}
+              </div>
+              <div className="mt-3">
+                <h3 className="text-sm font-semibold text-slate-900">{card.title}</h3>
+                <p className="mt-1 text-xs text-slate-500">{card.description}</p>
+              </div>
+              <p className="mt-3 text-xs font-medium text-indigo-600 group-hover:underline">Open →</p>
             </Link>
           ))}
         </div>

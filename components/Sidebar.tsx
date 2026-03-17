@@ -9,13 +9,22 @@ const adminNavItems = [
   { label: "Members", href: "/dashboard/members" },
   { label: "Tasks", href: "/dashboard/tasks" },
   { label: "Expenses", href: "/dashboard/expenses" },
+  { label: "Expense Split", href: "/dashboard/split" },
   { label: "Events", href: "/dashboard/events" },
+  { label: "Calendar", href: "/dashboard/calendar" },
   { label: "Documents", href: "/dashboard/documents" },
+  { label: "Chat", href: "/dashboard/chat" },
+  { label: "Notifications", href: "/dashboard/notifications" },
+  { label: "AI Assistant", href: "/dashboard/ai" },
   { label: "Settings", href: "/dashboard/settings" },
 ]
 
 const memberNavItems = [
   { label: "My Documents", href: "/dashboard/documents" },
+  { label: "Calendar", href: "/dashboard/calendar" },
+  { label: "Chat", href: "/dashboard/chat" },
+  { label: "Notifications", href: "/dashboard/notifications" },
+  { label: "AI Assistant", href: "/dashboard/ai" },
   { label: "Settings", href: "/dashboard/settings" },
 ]
 

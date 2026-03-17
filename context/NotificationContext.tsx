@@ -1,0 +1,79 @@
+"use client"
+
+import { createContext, useContext, useEffect, useState, useCallback } from "react"
+import { db } from "@/firebase/config"
+import { useAuth } from "@/context/AuthContext"
+import {
+  collection, addDoc, getDocs, updateDoc, doc, query, orderBy, where
+} from "firebase/firestore"
+
+export interface Notification {
+  id: string
+  title: string
+  message: string
+  read: boolean
+  createdAt: unknown
+  targetRole?: "admin" | "member" | "all"
+}
+
+interface NotificationContextType {
+  notifications: Notification[]
+  unreadCount: number
+  markRead: (id: string) => Promise<void>
+  markAllRead: () => Promise<void>
+  addNotification: (title: string, message: string, targetRole?: "admin" | "member" | "all") => Promise<void>
+  refresh: () => Promise<void>
+}
+
+const NotificationContext = createContext<NotificationContextType>({
+  notifications: [], unreadCount: 0,
+  markRead: async () => {}, markAllRead: async () => {},
+  addNotification: async () => {}, refresh: async () => {},
+})
+
+export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user, role } = useAuth()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+
+  const refresh = useCallback(async () => {
+    if (!user || !role) return
+    try {
+      const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"))
+      const snap = await getDocs(q)
+      const all = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Notification, "id">) }))
+      setNotifications(all.filter(n => n.targetRole === "all" || n.targetRole === role))
+    } catch (e) {
+      console.error("Failed to load notifications", e)
+    }
+  }, [user, role])
+
+  useEffect(() => { void refresh() }, [refresh])
+
+  const markRead = async (id: string) => {
+    await updateDoc(doc(db, "notifications", id), { read: true })
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  }
+
+  const markAllRead = async () => {
+    const unread = notifications.filter(n => !n.read)
+    await Promise.all(unread.map(n => updateDoc(doc(db, "notifications", n.id), { read: true })))
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const addNotification = async (title: string, message: string, targetRole: "admin" | "member" | "all" = "all") => {
+    await addDoc(collection(db, "notifications"), {
+      title, message, read: false, createdAt: new Date(), targetRole,
+    })
+    await refresh()
+  }
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  return (
+    <NotificationContext.Provider value={{ notifications, unreadCount, markRead, markAllRead, addNotification, refresh }}>
+      {children}
+    </NotificationContext.Provider>
+  )
+}
+
+export const useNotifications = () => useContext(NotificationContext)

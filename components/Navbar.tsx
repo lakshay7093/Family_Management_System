@@ -8,6 +8,7 @@ import { doc, getDoc } from "firebase/firestore"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import NotificationBell from "@/components/NotificationBell"
 
 type NavbarProps = {
   sidebarOpen: boolean
@@ -86,7 +87,8 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <NotificationBell />
         <div className="text-right hidden sm:block">
           <p className="text-sm font-medium text-slate-700 truncate max-w-35">{user?.email ?? "Guest"}</p>
           <p className="text-xs text-slate-500">{user ? "Signed in" : "Not signed in"}</p>

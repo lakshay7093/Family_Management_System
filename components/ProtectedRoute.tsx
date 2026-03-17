@@ -4,7 +4,14 @@ import { useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 
-const MEMBER_ALLOWED_PATHS = ["/dashboard/documents", "/dashboard/settings"]
+const MEMBER_ALLOWED_PATHS = [
+  "/dashboard/documents",
+  "/dashboard/settings",
+  "/dashboard/calendar",
+  "/dashboard/chat",
+  "/dashboard/notifications",
+  "/dashboard/ai",
+]
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, role, loading } = useAuth()
