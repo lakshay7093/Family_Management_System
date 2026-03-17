@@ -17,9 +17,7 @@ const firebaseConfig = {
 };
 
 if (!firebaseConfig.apiKey) {
-  throw new Error(
-    "Missing required Firebase config. Please set NEXT_PUBLIC_FIREBASE_API_KEY and other variables in .env.local"
-  );
+  console.warn("Missing Firebase config - check environment variables")
 }
 
 // Initialize Firebase
