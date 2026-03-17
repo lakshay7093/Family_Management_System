@@ -2,14 +2,20 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 
-const navItems = [
+const adminNavItems = [
   { label: "Overview", href: "/dashboard" },
   { label: "Members", href: "/dashboard/members" },
   { label: "Tasks", href: "/dashboard/tasks" },
   { label: "Expenses", href: "/dashboard/expenses" },
   { label: "Events", href: "/dashboard/events" },
   { label: "Documents", href: "/dashboard/documents" },
+  { label: "Settings", href: "/dashboard/settings" },
+]
+
+const memberNavItems = [
+  { label: "My Documents", href: "/dashboard/documents" },
   { label: "Settings", href: "/dashboard/settings" },
 ]
 
@@ -20,10 +26,12 @@ type SidebarProps = {
 
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { role } = useAuth()
+
+  const navItems = role === "admin" ? adminNavItems : memberNavItems
 
   return (
     <>
-      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/40 transition-opacity duration-200 md:hidden"
@@ -40,7 +48,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-lg font-bold tracking-wide">Family Hub</p>
-            <p className="mt-1 text-sm text-slate-300">Manage members, tasks, expenses & more.</p>
+            <p className="mt-1 text-xs text-slate-400 capitalize">
+              {role === "admin" ? "👑 Admin" : "👤 Member"}
+            </p>
           </div>
           {onClose && (
             <button
@@ -75,7 +85,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         </nav>
 
         <div className="mt-auto text-xs text-slate-400">
-          Tip: Use the sidebar to navigate between sections.
+          {role === "admin"
+            ? "Admin panel — full access."
+            : "You can view and add documents."}
         </div>
       </aside>
     </>

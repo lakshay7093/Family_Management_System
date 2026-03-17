@@ -6,6 +6,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase
 import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
+import AdminOnly from "@/components/AdminOnly"
 
 interface Task {
   id: string
@@ -16,6 +17,14 @@ interface Task {
 }
 
 export default function TasksPage() {
+  return (
+    <AdminOnly>
+      <TasksContent />
+    </AdminOnly>
+  )
+}
+
+function TasksContent() {
   const [title, setTitle] = useState("")
   const [assignedTo, setAssignedTo] = useState("")
   const [tasks, setTasks] = useState<Task[]>([])

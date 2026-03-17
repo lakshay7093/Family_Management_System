@@ -6,6 +6,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore"
 import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
+import AdminOnly from "@/components/AdminOnly"
 
 interface EventItem {
   id: string
@@ -16,6 +17,14 @@ interface EventItem {
 }
 
 export default function EventsPage() {
+  return (
+    <AdminOnly>
+      <EventsContent />
+    </AdminOnly>
+  )
+}
+
+function EventsContent() {
   const [title, setTitle] = useState("")
   const [date, setDate] = useState("")
   const [description, setDescription] = useState("")

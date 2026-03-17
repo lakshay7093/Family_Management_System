@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { signOut } from "firebase/auth"
 import { auth } from "@/firebase/config"
 import { useAuth } from "@/context/AuthContext"
+import Link from "next/link"
 
 type NavbarProps = {
   sidebarOpen: boolean
@@ -11,7 +12,7 @@ type NavbarProps = {
 }
 
 export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -55,8 +56,8 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-linear-to-br from-indigo-500 to-sky-500" />
           <div>
-            <p className="text-sm font-semibold text-slate-900">Family Dashboard</p>
-            <p className="text-xs text-slate-500">Stay on top of what matters</p>
+            <p className="text-sm font-semibold text-slate-900">Family Hub</p>
+            <p className="text-xs text-slate-500">{role === "admin" ? "👑 Admin" : "👤 Member"}</p>
           </div>
         </div>
       </div>

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { auth } from "@/firebase/config";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "@/firebase/config";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { collection, getCountFromServer, doc, setDoc } from "firebase/firestore";
 
 export default function Signup() {
   const router = useRouter()
@@ -12,6 +13,7 @@ export default function Signup() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const handleSignup = async () => {
     setError(null)
@@ -23,8 +25,22 @@ export default function Signup() {
 
     setLoading(true)
     try {
-      await createUserWithEmailAndPassword(auth, email, password)
-      router.push("/dashboard")
+      // Check if this is the first user — if so, make them admin
+      const usersCount = await getCountFromServer(collection(db, "users"))
+      const isFirstUser = usersCount.data().count === 0
+
+      const cred = await createUserWithEmailAndPassword(auth, email, password)
+
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email: cred.user.email,
+        role: isFirstUser ? "admin" : "member",
+        createdAt: new Date(),
+      })
+
+      // Sign out after registration so user has to login manually
+      await signOut(auth)
+      setSuccess(true)
+      setTimeout(() => router.push("/login"), 1500)
     } catch (err: unknown) {
       console.error("Signup error", err)
       const firebaseError = err as { code?: string; message?: string }
@@ -45,6 +61,12 @@ export default function Signup() {
         {error && (
           <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            Account created! Redirecting to login…
           </div>
         )}
 

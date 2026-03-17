@@ -1,10 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { applyTheme, getSavedSettings, saveSettings, Settings } from "@/lib/settings"
 import { toast } from "react-hot-toast"
 import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
+import { useAuth } from "@/context/AuthContext"
+import { db } from "@/firebase/config"
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore"
 
 const themeOptions = [
   { label: "System", value: "system" },
@@ -22,8 +25,41 @@ const defaultPages = [
 ]
 
 export default function SettingsPage() {
+  const { role } = useAuth()
   const [settings, setSettings] = useState<Settings>(() => getSavedSettings())
   const [saved, setSaved] = useState(false)
+
+  // User role management (admin only)
+  const [users, setUsers] = useState<{ id: string; email: string; role: string }[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
+
+  const fetchUsers = useCallback(async () => {
+    setUsersLoading(true)
+    try {
+      const snap = await getDocs(collection(db, "users"))
+      setUsers(snap.docs.map((d) => ({ id: d.id, ...(d.data() as { email: string; role: string }) })))
+    } catch (err) {
+      console.error("Failed to load users", err)
+    } finally {
+      setUsersLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (role === "admin") void fetchUsers()
+  }, [role, fetchUsers])
+
+  const toggleRole = async (uid: string, currentRole: string) => {
+    const newRole = currentRole === "admin" ? "member" : "admin"
+    try {
+      await updateDoc(doc(db, "users", uid), { role: newRole })
+      await fetchUsers()
+      toast.success(`Role updated to ${newRole}`)
+    } catch (err) {
+      console.error("Failed to update role", err)
+      toast.error("Failed to update role")
+    }
+  }
 
   useEffect(() => {
     applyTheme(settings.theme)
@@ -121,6 +157,33 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Admin-only: User Role Management */}
+      {role === "admin" && (
+        <Card title="User Role Management" subtitle="Change roles for family members. Admin has full access, Member can only view documents.">
+          {usersLoading ? (
+            <p className="text-sm text-slate-600">Loading users…</p>
+          ) : users.length === 0 ? (
+            <p className="text-sm text-slate-500">No users found.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {users.map((u) => (
+                <div key={u.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{u.email}</p>
+                    <span className={`text-xs font-medium ${u.role === "admin" ? "text-violet-600" : "text-slate-500"}`}>
+                      {u.role === "admin" ? "👑 Admin" : "👤 Member"}
+                    </span>
+                  </div>
+                  <Button size="sm" variant="secondary" onClick={() => toggleRole(u.id, u.role)}>
+                    Make {u.role === "admin" ? "Member" : "Admin"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   )
 }

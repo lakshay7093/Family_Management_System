@@ -6,6 +6,7 @@ import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore"
 import Button from "@/components/ui/Button"
 import Card from "@/components/ui/Card"
 import ConfirmDialog from "@/components/ui/ConfirmDialog"
+import AdminOnly from "@/components/AdminOnly"
 
 interface Expense {
   id: string
@@ -17,6 +18,14 @@ interface Expense {
 }
 
 export default function ExpensesPage() {
+  return (
+    <AdminOnly>
+      <ExpensesContent />
+    </AdminOnly>
+  )
+}
+
+function ExpensesContent() {
   const [title, setTitle] = useState("")
   const [amount, setAmount] = useState("")
   const [paidBy, setPaidBy] = useState("")
