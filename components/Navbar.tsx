@@ -5,6 +5,7 @@ import { signOut } from "firebase/auth"
 import { auth, db } from "@/firebase/config"
 import { useAuth } from "@/context/AuthContext"
 import { doc, getDoc } from "firebase/firestore"
+import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -20,8 +21,17 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
 
   useEffect(() => {
     if (!user) return
-    getDoc(doc(db, "users", user.uid)).then((snap) => {
-      if (snap.exists()) setPhotoUrl(snap.data().photoUrl ?? null)
+    getDoc(doc(db, "users", user.uid)).then(async (snap) => {
+      if (snap.exists() && snap.data().photoUrl) {
+        setPhotoUrl(snap.data().photoUrl)
+      } else {
+        const { data } = await supabase
+          .from("profiles")
+          .select("photo_url")
+          .eq("uid", user.uid)
+          .single()
+        if (data?.photo_url) setPhotoUrl(data.photo_url)
+      }
     })
   }, [user])
 
@@ -64,7 +74,7 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 overflow-hidden rounded-full bg-gradient-to-br from-indigo-500 to-sky-500 shrink-0">
+          <div className="h-10 w-10 overflow-hidden rounded-full bg-linear-to-br from-indigo-500 to-sky-500 shrink-0">
             {photoUrl && (
               <img src={photoUrl} alt="Profile" className="h-full w-full object-cover" />
             )}
@@ -78,7 +88,7 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
 
       <div className="flex items-center gap-2">
         <div className="text-right hidden sm:block">
-          <p className="text-sm font-medium text-slate-700 truncate max-w-[140px]">{user?.email ?? "Guest"}</p>
+          <p className="text-sm font-medium text-slate-700 truncate max-w-35">{user?.email ?? "Guest"}</p>
           <p className="text-xs text-slate-500">{user ? "Signed in" : "Not signed in"}</p>
         </div>
         <button

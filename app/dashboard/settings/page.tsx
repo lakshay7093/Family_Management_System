@@ -44,11 +44,21 @@ export default function SettingsPage() {
   const [users, setUsers] = useState<{ id: string; email: string; role: string; photoUrl?: string }[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
 
-  // Load current profile image from Firestore
+  // Load current profile image - Firestore primary, Supabase fallback
   useEffect(() => {
     if (!user) return
-    getDoc(doc(db, "users", user.uid)).then((snap) => {
-      if (snap.exists()) setProfileImage(snap.data().photoUrl ?? null)
+    getDoc(doc(db, "users", user.uid)).then(async (snap) => {
+      if (snap.exists() && snap.data().photoUrl) {
+        setProfileImage(snap.data().photoUrl)
+      } else {
+        // fallback: check Supabase profiles table
+        const { data } = await supabase
+          .from("profiles")
+          .select("photo_url")
+          .eq("uid", user.uid)
+          .single()
+        if (data?.photo_url) setProfileImage(data.photo_url)
+      }
     })
   }, [user])
 
@@ -85,7 +95,17 @@ export default function SettingsPage() {
       const { data } = supabase.storage.from("Family_images").getPublicUrl(filePath)
       const photoUrl = data.publicUrl
 
+      // Save to Firestore
       await updateDoc(doc(db, "users", user.uid), { photoUrl })
+
+      // Save to Supabase DB (upsert into profiles table)
+      await supabase.from("profiles").upsert({
+        uid: user.uid,
+        email: user.email,
+        photo_url: photoUrl,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "uid" })
+
       setProfileImage(photoUrl)
       toast.success("Profile photo updated")
     } catch (err) {
