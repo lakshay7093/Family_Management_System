@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
+import { X } from "lucide-react"
 
 const adminNavItems = [
   { label: "Overview", href: "/dashboard" },
@@ -36,75 +37,72 @@ type SidebarProps = {
 export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { role } = useAuth()
-
   const navItems = role === "admin" ? adminNavItems : memberNavItems
 
   return (
     <>
-      {/* Mobile backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+      {/* Mobile backdrop — only visible when open */}
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        className={`fixed inset-0 z-30 bg-black/50 transition-opacity duration-300 md:hidden ${
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      />
 
-      {/* Sidebar */}
+      {/* Sidebar panel */}
       <aside
         className={`
-          fixed top-0 left-0 z-40 h-full w-64 shrink-0 flex-col bg-slate-950 text-white shadow-xl
-          transition-transform duration-200
-          md:sticky md:top-0 md:flex md:h-screen md:translate-x-0
-          ${isOpen ? "flex translate-x-0" : "hidden -translate-x-full md:flex"}
+          fixed top-0 left-0 z-40 flex h-full w-72 flex-col bg-slate-950 text-white shadow-2xl
+          transition-transform duration-300 ease-in-out
+          md:sticky md:top-0 md:h-screen md:w-64 md:translate-x-0 md:shadow-none
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        {/* Scrollable inner content */}
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-lg font-bold tracking-wide">Family Hub</p>
-              <p className="mt-1 text-xs text-slate-400 capitalize">
-                {role === "admin" ? "👑 Admin" : "👤 Member"}
-              </p>
-            </div>
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 md:hidden"
-                aria-label="Close navigation"
-              >
-                <span className="text-lg">×</span>
-              </button>
-            )}
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+          <div>
+            <p className="text-base font-bold tracking-wide">Family Hub</p>
+            <p className="mt-0.5 text-xs text-slate-400">
+              {role === "admin" ? "👑 Admin" : "👤 Member"}
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20 md:hidden"
+            aria-label="Close menu"
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-          <nav className="flex flex-col gap-1">
+        {/* Nav links — scrollable */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <div className="flex flex-col gap-0.5">
             {navItems.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block rounded-xl px-4 py-3 text-sm font-medium transition ${
-                    isActive
-                      ? "bg-slate-800 text-white shadow"
-                      : "text-slate-200 hover:bg-slate-800/70 hover:text-white"
-                  }`}
                   onClick={onClose}
+                  className={`flex items-center rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-indigo-600 text-white"
+                      : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  }`}
                 >
                   {item.label}
                 </Link>
               )
             })}
-          </nav>
-
-          <div className="mt-auto text-xs text-slate-400">
-            {role === "admin"
-              ? "Admin panel — full access."
-              : "You can view and add documents."}
           </div>
+        </nav>
+
+        {/* Footer */}
+        <div className="border-t border-slate-800 px-5 py-4 text-xs text-slate-500">
+          {role === "admin" ? "Full admin access" : "Member access"}
         </div>
       </aside>
     </>

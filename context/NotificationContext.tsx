@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { db } from "@/firebase/config"
 import { useAuth } from "@/context/AuthContext"
 import {
-  collection, addDoc, getDocs, updateDoc, doc, query, orderBy, where
+  collection, addDoc, getDocs, updateDoc, doc, query, orderBy
 } from "firebase/firestore"
 
 export interface Notification {
@@ -61,9 +61,34 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   }
 
   const addNotification = async (title: string, message: string, targetRole: "admin" | "member" | "all" = "all") => {
+    // Save to Firestore (in-app)
     await addDoc(collection(db, "notifications"), {
       title, message, read: false, createdAt: new Date(), targetRole,
     })
+
+    // Send FCM push to all users who have a token
+    try {
+      const usersSnap = await getDocs(collection(db, "users"))
+      const tokens: string[] = []
+      usersSnap.forEach(d => {
+        const data = d.data()
+        if (data.fcmToken && (targetRole === "all" || data.role === targetRole)) {
+          tokens.push(data.fcmToken)
+        }
+      })
+
+      // Call our API route to send via FCM
+      if (tokens.length > 0) {
+        await fetch("/api/send-notification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tokens, title, message }),
+        })
+      }
+    } catch (e) {
+      console.error("FCM push failed", e)
+    }
+
     await refresh()
   }
 

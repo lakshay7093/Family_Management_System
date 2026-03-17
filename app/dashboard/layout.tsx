@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar"
 import Navbar from "@/components/Navbar"
 import ProtectedRoute from "@/components/ProtectedRoute"
 import { getSavedSettings } from "@/lib/settings"
+import { usePushNotifications } from "@/lib/usePushNotifications"
 
 export default function DashboardLayout({
   children,
@@ -16,6 +17,8 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const redirectedRef = useRef(false)
+
+  usePushNotifications()
 
   useEffect(() => {
     if (pathname !== "/dashboard") return

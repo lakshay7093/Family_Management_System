@@ -1,12 +1,8 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore"
+import { getMessaging, isSupported } from "firebase/messaging"
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration (stored in environment variables)
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -20,7 +16,13 @@ if (!firebaseConfig.apiKey) {
   console.warn("Missing Firebase config - check environment variables")
 }
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Messaging — only works in browser, not SSR
+export const getFirebaseMessaging = async () => {
+  const supported = await isSupported()
+  if (!supported) return null
+  return getMessaging(app)
+}
