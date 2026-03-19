@@ -6,22 +6,29 @@ import { onAuthStateChanged, User } from "firebase/auth"
 import { doc, getDoc, setDoc } from "firebase/firestore"
 
 export type UserRole = "admin" | "member"
+export type UserStatus = "approved" | "pending" | "rejected"
 
 interface AuthContextType {
   user: User | null
   role: UserRole | null
+  status: UserStatus | null
+  familyRole: string | null
   loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   role: null,
+  status: null,
+  familyRole: null,
   loading: true,
 })
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<UserRole | null>(null)
+  const [status, setStatus] = useState<UserStatus | null>(null)
+  const [familyRole, setFamilyRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -35,22 +42,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (userDoc.exists()) {
             setRole((userDoc.data().role as UserRole) ?? "member")
+            setStatus((userDoc.data().status as UserStatus) ?? "approved")
+            setFamilyRole(userDoc.data().familyRole ?? null)
           } else {
-            // First time login — create user doc with default role "member"
-            // First registered user gets admin (optional: remove this logic if you want manual assignment)
             await setDoc(userDocRef, {
               email: currentUser.email,
               role: "member",
+              status: "pending",
               createdAt: new Date(),
             })
             setRole("member")
+            setStatus("pending")
+            setFamilyRole(null)
           }
         } catch (err) {
           console.error("Failed to fetch user role", err)
           setRole("member")
+          setStatus("approved")
         }
       } else {
         setRole(null)
+        setStatus(null)
+        setFamilyRole(null)
       }
 
       setLoading(false)
@@ -60,7 +73,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, role, loading }}>
+    <AuthContext.Provider value={{ user, role, status, familyRole, loading }}>
       {children}
     </AuthContext.Provider>
   )

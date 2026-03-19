@@ -66,11 +66,17 @@ export default function DocumentsPage() {
     setLoading(true)
     setError(null)
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("documents")
         .select("*")
         .order("created_at", { ascending: false })
 
+      // Members only see their own documents
+      if (!isAdmin) {
+        query = query.eq("uploaded_by", user?.email ?? "")
+      }
+
+      const { data, error } = await query
       if (error) throw new Error(error.message)
       setDocuments(data ?? [])
     } catch (err) {
@@ -79,7 +85,7 @@ export default function DocumentsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isAdmin, user?.email])
 
   const uploadToSupabase = async (file: File) => {
     const bucket = getBucket(file)

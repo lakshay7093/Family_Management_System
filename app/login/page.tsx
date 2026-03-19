@@ -1,10 +1,11 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { auth } from "@/firebase/config";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { auth, db } from "@/firebase/config"
+import { signInWithEmailAndPassword, signOut } from "firebase/auth"
+import { doc, getDoc } from "firebase/firestore"
 
 export default function Login() {
   const router = useRouter()
@@ -12,29 +13,63 @@ export default function Login() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [pending, setPending] = useState(false)
 
   const handleLogin = async () => {
     setError(null)
-
+    setPending(false)
     if (!email.trim() || !password.trim()) {
       setError("Please enter both email and password.")
       return
     }
-
     setLoading(true)
-
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const cred = await signInWithEmailAndPassword(auth, email, password)
+
+      // Check approval status — if no status field, treat as approved (existing users)
+      const userDoc = await getDoc(doc(db, "users", cred.user.uid))
+      const status = userDoc.data()?.status ?? "approved"
+
+      if (status === "pending") {
+        // Sign them out immediately
+        await signOut(auth)
+        setPending(true)
+        return
+      }
+
+      if (status === "rejected") {
+        await signOut(auth)
+        setError("Your registration has been rejected by the admin.")
+        return
+      }
+
       router.push("/dashboard")
     } catch (err: unknown) {
-      console.error("Login error", err)
-      const firebaseError = err as { code?: string; message?: string }
-      const message =
-        firebaseError?.message ?? (err instanceof Error ? err.message : "Unexpected error")
-      setError(message)
+      const firebaseError = err as { message?: string }
+      setError(firebaseError?.message ?? "Unexpected error")
     } finally {
       setLoading(false)
     }
+  }
+
+  if (pending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md rounded-2xl bg-white/80 p-8 shadow-lg backdrop-blur text-center space-y-4">
+          <div className="text-5xl">⏳</div>
+          <h1 className="text-xl font-bold text-slate-900">Approval pending</h1>
+          <p className="text-sm text-slate-600">
+            Your account is awaiting admin approval. Please check back later.
+          </p>
+          <button
+            onClick={() => setPending(false)}
+            className="text-sm font-semibold text-indigo-600 hover:underline"
+          >
+            Try another account
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -87,8 +122,8 @@ export default function Login() {
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          Don&apos;t have an account?
-          <Link href="/signup" className="ml-1 font-semibold text-indigo-600 hover:text-indigo-700">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="font-semibold text-indigo-600 hover:text-indigo-700">
             Create one
           </Link>
         </p>

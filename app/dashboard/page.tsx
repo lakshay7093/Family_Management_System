@@ -4,9 +4,88 @@ import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { db } from "@/firebase/config"
-import { collection, getCountFromServer } from "firebase/firestore"
+import { collection, getCountFromServer, getDocs, query, where, doc, updateDoc } from "firebase/firestore"
 import { useAuth } from "@/context/AuthContext"
 import Button from "@/components/ui/Button"
+
+// ─── Pending Approvals Modal ──────────────────────────────────────────────────
+
+interface PendingUser {
+  id: string
+  name: string
+  email: string
+  createdAt: unknown
+}
+
+function PendingApprovalsModal({ onClose }: { onClose: () => void }) {
+  const [users, setUsers] = useState<PendingUser[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchPending = useCallback(async () => {
+    setLoading(true)
+    try {
+      // Fetch users with status "pending" OR missing status field
+      const snap = await getDocs(collection(db, "users"))
+      const pending = snap.docs
+        .map(d => ({ id: d.id, ...(d.data() as Omit<PendingUser, "id">) }))
+        .filter((u: PendingUser & { status?: string }) => u.status === "pending")
+      setUsers(pending)
+    } catch (e) {
+      console.error(e)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { void fetchPending() }, [fetchPending])
+
+  const approve = async (id: string) => {
+    await updateDoc(doc(db, "users", id), { status: "approved" })
+    setUsers(prev => prev.filter(u => u.id !== id))
+  }
+
+  const reject = async (id: string) => {
+    await updateDoc(doc(db, "users", id), { status: "rejected" })
+    setUsers(prev => prev.filter(u => u.id !== id))
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Pending Approvals</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Review new registration requests</p>
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 text-lg">×</button>
+        </div>
+
+        <div className="max-h-96 overflow-y-auto p-4 space-y-3">
+          {loading ? (
+            <p className="text-sm text-slate-500 text-center py-4">Loading...</p>
+          ) : users.length === 0 ? (
+            <div className="text-center py-8 space-y-2">
+              <div className="text-3xl">✅</div>
+              <p className="text-sm text-slate-500">No pending approvals</p>
+            </div>
+          ) : (
+            users.map(u => (
+              <div key={u.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">{u.name || "Unknown"}</p>
+                  <p className="text-xs text-slate-500">{u.email}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => approve(u.id)}>Approve</Button>
+                  <Button size="sm" variant="danger" onClick={() => reject(u.id)}>Reject</Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
@@ -17,7 +96,6 @@ type DashboardCounts = {
   events: number
   documents: number
 }
-
 const adminCards = [
   {
     key: "members" as keyof DashboardCounts,
@@ -76,17 +154,20 @@ function AdminDashboard() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showApprovals, setShowApprovals] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
 
   const refreshCounts = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const [members, tasks, expenses, events, documents] = await Promise.all([
+      const [members, tasks, expenses, events, documents, pending] = await Promise.all([
         getCountFromServer(collection(db, "members")),
         getCountFromServer(collection(db, "tasks")),
         getCountFromServer(collection(db, "expenses")),
         getCountFromServer(collection(db, "events")),
         getCountFromServer(collection(db, "documents")),
+        getCountFromServer(query(collection(db, "users"), where("status", "==", "pending"))),
       ])
       setCounts({
         members: members.data().count,
@@ -95,6 +176,7 @@ function AdminDashboard() {
         events: events.data().count,
         documents: documents.data().count,
       })
+      setPendingCount(pending.data().count)
     } catch (err) {
       console.error("Failed to load dashboard counts", err)
       setError("Unable to load dashboard stats. Please try again.")
@@ -109,6 +191,8 @@ function AdminDashboard() {
 
   return (
     <div className="space-y-8">
+      {showApprovals && <PendingApprovalsModal onClose={() => { setShowApprovals(false); void refreshCounts() }} />}
+
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
@@ -117,6 +201,17 @@ function AdminDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setShowApprovals(true)}
+            className="relative inline-flex items-center justify-center rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-600"
+          >
+            Pending Approvals
+            {pendingCount > 0 && (
+              <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-amber-600">
+                {pendingCount}
+              </span>
+            )}
+          </button>
           <Link
             href="/dashboard/members"
             className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"

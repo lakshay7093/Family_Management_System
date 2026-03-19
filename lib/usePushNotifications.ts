@@ -32,22 +32,35 @@ export function usePushNotifications() {
         const messaging = await getFirebaseMessaging()
         if (!messaging) return
 
+        // Don't block if notifications not supported or permission denied
+        if (!("Notification" in window)) return
+        
         const permission = await Notification.requestPermission()
         if (permission !== "granted") return
 
         // Register SW
-        const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
-          scope: "/",
-        })
-        await navigator.serviceWorker.ready
+        let swReg: ServiceWorkerRegistration
+        try {
+          swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" })
+          await navigator.serviceWorker.ready
+        } catch {
+          // SW registration failed (common on localhost) — skip silently
+          return
+        }
 
         // Send config to SW via postMessage (no hardcoded keys in SW file)
         swReg.active?.postMessage({ type: "INIT_FIREBASE", config: firebaseConfig })
 
-        const token = await getToken(messaging, {
-          vapidKey: VAPID_KEY,
-          serviceWorkerRegistration: swReg,
-        })
+        let token: string | null = null
+        try {
+          token = await getToken(messaging, {
+            vapidKey: VAPID_KEY,
+            serviceWorkerRegistration: swReg,
+          })
+        } catch {
+          // Push service error (common on localhost/HTTP) — skip silently
+          return
+        }
 
         if (!token) return
 
@@ -57,7 +70,8 @@ export function usePushNotifications() {
           { merge: true }
         )
       } catch (err) {
-        console.error("Push notification setup failed:", err)
+        // Never block the app for push notification failures
+        console.warn("Push notification setup skipped:", err)
       }
     }
 
