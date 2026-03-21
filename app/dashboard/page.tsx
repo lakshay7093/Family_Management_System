@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { db } from "@/firebase/config"
-import { collection, getCountFromServer, getDocs, query, where, doc, updateDoc } from "firebase/firestore"
+import { collection, getCountFromServer, getDocs, query, where, doc, updateDoc, getDoc } from "firebase/firestore"
 import { useAuth } from "@/context/AuthContext"
 import Button from "@/components/ui/Button"
 
@@ -40,6 +40,15 @@ function PendingApprovalsModal({ onClose }: { onClose: () => void }) {
 
   const approve = async (id: string) => {
     await updateDoc(doc(db, "users", id), { status: "approved" })
+    // Send approval email
+    const user = users.find(u => u.id === id)
+    if (user?.email) {
+      fetch("/api/send-approval-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, name: user.name }),
+      }).catch(console.error)
+    }
     setUsers(prev => prev.filter(u => u.id !== id))
   }
 
@@ -149,6 +158,7 @@ const extraCards = [
 
 function AdminDashboard() {
   const { user } = useAuth()
+  const [displayName, setDisplayName] = useState<string | null>(null)
   const [counts, setCounts] = useState<DashboardCounts>({
     members: 0, tasks: 0, expenses: 0, events: 0, documents: 0,
   })
@@ -189,6 +199,13 @@ function AdminDashboard() {
     void refreshCounts()
   }, [refreshCounts])
 
+  useEffect(() => {
+    if (!user) return
+    getDoc(doc(db, "users", user.uid)).then((snap) => {
+      if (snap.exists() && snap.data().name) setDisplayName(snap.data().name)
+    })
+  }, [user])
+
   return (
     <div className="space-y-8">
       {showApprovals && <PendingApprovalsModal onClose={() => { setShowApprovals(false); void refreshCounts() }} />}
@@ -197,7 +214,7 @@ function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Welcome back, {user?.email}. Here&apos;s your family overview.
+            Welcome back, {displayName ?? user?.displayName ?? user?.email?.split("@")[0]}. Here&apos;s your family overview.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

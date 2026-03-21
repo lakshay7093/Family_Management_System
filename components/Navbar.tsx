@@ -19,12 +19,14 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
   const { user, role } = useAuth()
   const router = useRouter()
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
     getDoc(doc(db, "users", user.uid)).then(async (snap) => {
-      if (snap.exists() && snap.data().photoUrl) {
-        setPhotoUrl(snap.data().photoUrl)
+      if (snap.exists()) {
+        if (snap.data().photoUrl) setPhotoUrl(snap.data().photoUrl)
+        if (snap.data().name) setDisplayName(snap.data().name)
       } else {
         const { data } = await supabase
           .from("profiles")
@@ -75,9 +77,13 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
         </button>
 
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 overflow-hidden rounded-full bg-linear-to-br from-indigo-500 to-sky-500 shrink-0">
-            {photoUrl && (
+          <div className="h-10 w-10 overflow-hidden rounded-full bg-linear-to-br from-indigo-500 to-sky-500 shrink-0 flex items-center justify-center">
+            {photoUrl ? (
               <img src={photoUrl} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-sm font-bold text-white">
+                {(displayName ?? user?.displayName ?? user?.email ?? "?")[0].toUpperCase()}
+              </span>
             )}
           </div>
           <div>
@@ -90,7 +96,9 @@ export default function Navbar({ sidebarOpen, onToggleSidebar }: NavbarProps) {
       <div className="flex items-center gap-3">
         <NotificationBell />
         <div className="text-right hidden sm:block">
-          <p className="text-sm font-medium text-slate-700 truncate max-w-35">{user?.email ?? "Guest"}</p>
+          <p className="text-sm font-medium text-slate-700 truncate max-w-35">
+            {displayName ?? user?.displayName ?? user?.email?.split("@")[0] ?? "Guest"}
+          </p>
           <p className="text-xs text-slate-500">{user ? "Signed in" : "Not signed in"}</p>
         </div>
         <button
