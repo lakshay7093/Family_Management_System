@@ -22,4 +22,3 @@ CSS / Tailwind (if used)
 Backend / Database
 Firebase Authentication
 Firebase Firestore
->>>>>>> fb04d0a1d63b9baeb931d479d0504b8772b7870f
