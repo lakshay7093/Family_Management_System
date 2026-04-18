@@ -13,6 +13,7 @@ interface AuthContextType {
   role: UserRole | null
   status: UserStatus | null
   familyRole: string | null
+  familyId: string | null
   loading: boolean
 }
 
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   status: null,
   familyRole: null,
+  familyId: null,
   loading: true,
 })
 
@@ -29,6 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState<UserRole | null>(null)
   const [status, setStatus] = useState<UserStatus | null>(null)
   const [familyRole, setFamilyRole] = useState<string | null>(null)
+  const [familyId, setFamilyId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -44,6 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setRole((userDoc.data().role as UserRole) ?? "member")
             setStatus((userDoc.data().status as UserStatus) ?? "approved")
             setFamilyRole(userDoc.data().familyRole ?? null)
+            setFamilyId(userDoc.data().familyId ?? null)
           } else {
             await setDoc(userDocRef, {
               email: currentUser.email,
@@ -64,6 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRole(null)
         setStatus(null)
         setFamilyRole(null)
+        setFamilyId(null)
       }
 
       setLoading(false)
@@ -73,7 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, role, status, familyRole, loading }}>
+    <AuthContext.Provider value={{ user, role, status, familyRole, familyId, loading }}>
       {children}
     </AuthContext.Provider>
   )

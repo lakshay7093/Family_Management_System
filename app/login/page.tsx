@@ -49,6 +49,10 @@ export default function Login() {
           setPending(true)
           return
         }
+
+        // First user needs to setup family
+        router.push("/setup-family")
+        return
       } else {
         const status = userDoc.data()?.status ?? "approved"
         if (status === "pending") {
@@ -85,6 +89,7 @@ export default function Login() {
       const cred = await signInWithEmailAndPassword(auth, email, password)
       const userDoc = await getDoc(doc(db, "users", cred.user.uid))
       const status = userDoc.data()?.status ?? "approved"
+      const familyId = userDoc.data()?.familyId
 
       if (status === "pending") {
         await signOut(auth)
@@ -94,6 +99,12 @@ export default function Login() {
       if (status === "rejected") {
         await signOut(auth)
         setError("Your registration has been rejected by the admin.")
+        return
+      }
+
+      // Check if admin needs to setup family
+      if (userDoc.data()?.role === "admin" && !familyId) {
+        router.push("/setup-family")
         return
       }
 
@@ -154,7 +165,12 @@ export default function Login() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Password</span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">Password</span>
+              <Link href="/forgot-password" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               value={password}

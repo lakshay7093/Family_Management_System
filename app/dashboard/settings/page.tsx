@@ -44,6 +44,11 @@ export default function SettingsPage() {
   const [users, setUsers] = useState<{ id: string; email: string; role: string; photoUrl?: string }[]>([])
   const [usersLoading, setUsersLoading] = useState(false)
 
+  // Family referral code (admin only)
+  const [referralCode, setReferralCode] = useState<string | null>(null)
+  const [familyName, setFamilyName] = useState<string | null>(null)
+  const [loadingFamily, setLoadingFamily] = useState(false)
+
   // Load current profile image - Firestore primary, Supabase fallback
   useEffect(() => {
     if (!user) return
@@ -120,6 +125,25 @@ export default function SettingsPage() {
   useEffect(() => {
     if (role === "admin") void fetchUsers()
   }, [role, fetchUsers])
+
+  // Load family referral code for admin
+  useEffect(() => {
+    if (role === "admin" && user) {
+      setLoadingFamily(true)
+      getDoc(doc(db, "users", user.uid))
+        .then(async (userSnap) => {
+          if (userSnap.exists() && userSnap.data().familyId) {
+            const familyId = userSnap.data().familyId
+            const familySnap = await getDoc(doc(db, "families", familyId))
+            if (familySnap.exists()) {
+              setReferralCode(familySnap.data().referralCode)
+              setFamilyName(familySnap.data().name)
+            }
+          }
+        })
+        .finally(() => setLoadingFamily(false))
+    }
+  }, [role, user])
 
   const toggleRole = async (uid: string, currentRole: string) => {
     const newRole = currentRole === "admin" ? "member" : "admin"
@@ -269,6 +293,43 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Admin-only: Family Referral Code */}
+      {role === "admin" && (
+        <Card title="Family Referral Code" subtitle="Share this code with family members so they can join your family.">
+          {loadingFamily ? (
+            <p className="text-sm text-slate-600">Loading…</p>
+          ) : referralCode ? (
+            <div className="mt-3 space-y-3">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-medium text-slate-500 uppercase">Family Name</p>
+                <p className="text-lg font-bold text-slate-900">{familyName}</p>
+              </div>
+              <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 px-4 py-4">
+                <p className="text-xs font-medium text-indigo-600 uppercase">Referral Code</p>
+                <div className="mt-1 flex items-center justify-between">
+                  <p className="text-2xl font-bold tracking-wider text-indigo-900">{referralCode}</p>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      navigator.clipboard.writeText(referralCode)
+                      toast.success("Referral code copied!")
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500">
+                New members need this code to register and join your family.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">No family found. Please contact support.</p>
+          )}
+        </Card>
+      )}
 
       {/* Admin-only: User Role Management */}
       {role === "admin" && (

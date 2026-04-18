@@ -10,13 +10,14 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth"
-import { collection, getCountFromServer, doc, setDoc, getDoc } from "firebase/firestore"
+import { collection, query, where, getDocs, doc, setDoc, getDoc } from "firebase/firestore"
 
 export default function Signup() {
   const router = useRouter()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [referralCode, setReferralCode] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -25,6 +26,26 @@ export default function Signup() {
     setError(null)
     setLoading(true)
     try {
+      if (!referralCode.trim()) {
+        setError("Referral code is required to join a family.")
+        setLoading(false)
+        return
+      }
+
+      // Verify referral code
+      const familiesRef = collection(db, "families")
+      const q = query(familiesRef, where("referralCode", "==", referralCode.trim()))
+      const familySnapshot = await getDocs(q)
+
+      if (familySnapshot.empty) {
+        setError("Invalid referral code. Please check and try again.")
+        setLoading(false)
+        return
+      }
+
+      const familyDoc = familySnapshot.docs[0]
+      const familyId = familyDoc.id
+
       const provider = new GoogleAuthProvider()
       provider.setCustomParameters({ prompt: "select_account" })
       const cred = await signInWithPopup(auth, provider)
@@ -38,24 +59,17 @@ export default function Signup() {
         return
       }
 
-      const usersCount = await getCountFromServer(collection(db, "users"))
-      const isFirstUser = usersCount.data().count === 0
-
       await setDoc(userDocRef, {
         name: cred.user.displayName ?? "",
         email: cred.user.email,
-        role: isFirstUser ? "admin" : "member",
-        status: isFirstUser ? "approved" : "pending",
+        familyId: familyId,
+        role: "member",
+        status: "pending",
         createdAt: new Date(),
       })
 
       await signOut(auth)
-
-      if (isFirstUser) {
-        router.push("/login")
-      } else {
-        setSuccess(true)
-      }
+      setSuccess(true)
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string }
       if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") return
@@ -71,18 +85,34 @@ export default function Signup() {
       setError("Please fill all fields.")
       return
     }
+    if (!referralCode.trim()) {
+      setError("Referral code is required to join a family.")
+      return
+    }
     setLoading(true)
     try {
-      const usersCount = await getCountFromServer(collection(db, "users"))
-      const isFirstUser = usersCount.data().count === 0
+      // Verify referral code
+      const familiesRef = collection(db, "families")
+      const q = query(familiesRef, where("referralCode", "==", referralCode.trim()))
+      const familySnapshot = await getDocs(q)
+
+      if (familySnapshot.empty) {
+        setError("Invalid referral code. Please check and try again.")
+        setLoading(false)
+        return
+      }
+
+      const familyDoc = familySnapshot.docs[0]
+      const familyId = familyDoc.id
 
       const cred = await createUserWithEmailAndPassword(auth, email, password)
 
       await setDoc(doc(db, "users", cred.user.uid), {
         name: name.trim(),
         email: cred.user.email,
-        role: isFirstUser ? "admin" : "member",
-        status: isFirstUser ? "approved" : "pending",
+        familyId: familyId,
+        role: "member",
+        status: "pending",
         createdAt: new Date(),
       })
 
@@ -131,6 +161,21 @@ export default function Signup() {
         )}
 
         <div className="mt-6 space-y-4">
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700">Referral Code</span>
+            <input
+              type="text"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Enter family referral code"
+              required
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Ask your family admin for the referral code
+            </p>
+          </label>
+
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Full Name</span>
             <input
